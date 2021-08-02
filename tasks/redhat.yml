@@ -1,0 +1,29 @@
+---
+# task file for rbicker.nextcloud
+
+- name: ensure rpm keys are imported
+  rpm_key:
+    state: present
+    key: '{{ item }}'
+  loop:
+    - https://getfedora.org/static/fedora.gpg
+    - https://rpms.remirepo.net/RPM-GPG-KEY-remi2018
+  when: nextcloud_manage_repos
+
+- name: ensure epel-release and Remi yum repos are installed
+  yum:
+    name:
+      - https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+      - https://rpms.remirepo.net/enterprise/remi-release-{{ ansible_distribution_major_version }}.rpm
+    state: present
+  when: nextcloud_manage_repos
+
+- name: add MariaDB repo
+  yum_repository:
+    name: mariadb
+    description: Extra Packages for Enterprise Linux {{ ansible_distribution_major_version }} - $basearch
+    baseurl: http://yum.mariadb.org/{{ mariadb_version }}/centos{{ ansible_distribution_major_version|int }}-amd64
+    gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+    gpgcheck: yes
+    enabled: 1
+  when: nextcloud_manage_repos

@@ -1,0 +1,14 @@
+---
+# task file for rbicker.nextcloud
+
+- name: ensure apt keys are imported
+  ansible.builtin.apt_key:
+    url: https://mariadb.org/mariadb_release_signing_key.asc
+    state: present
+  when: nextcloud_manage_repos
+
+- name: Ensure mariadb repo
+  ansible.builtin.apt_repository:
+    repo: deb [arch=amd64,arm64,ppc64el] https://mariadb.mirror.digitalpacific.com.au/repo/10.6/debian buster main
+    state: present
+  when: nextcloud_manage_repos

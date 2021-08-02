@@ -1,39 +1,24 @@
 ---
 # task file for rbicker.nextcloud
 
-- name: ensure rpm keys are imported
-  rpm_key:
-    state: present
-    key: '{{ item }}'
-  loop:
-    - https://getfedora.org/static/fedora.gpg
-    - https://rpms.remirepo.net/RPM-GPG-KEY-remi2018
-  when: nextcloud_manage_yum_repos
+- name: import redhat specific tasks
+  import_tasks: 'redhat.yml'
+  when: 
+    - ansible_facts['os_family'] == "RedHat"
+    - nextcloud_manage_repos
 
-- name: ensure epel-release and Remi yum repos are installed
-  yum:
-    name:
-      - https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
-      - https://rpms.remirepo.net/enterprise/remi-release-{{ ansible_distribution_major_version }}.rpm
-    state: present
-  when: nextcloud_manage_yum_repos
-
-- name: add MariaDB repo
-  yum_repository:
-    name: mariadb
-    description: Extra Packages for Enterprise Linux {{ ansible_distribution_major_version }} - $basearch
-    baseurl: http://yum.mariadb.org/{{ mariadb_version }}/centos{{ ansible_distribution_major_version|int }}-amd64
-    gpgkey: https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-    gpgcheck: yes
-    enabled: 1
-  when: nextcloud_manage_yum_repos
+- name: import redhat specific tasks
+  import_tasks: 'debian.yml'
+  when: 
+    - ansible_facts['os_family'] == "Debian"
+    - nextcloud_manage_repos
 
 - name: get all not-used PHP repos
   shell: |
     set -o pipefail
     ls /etc/yum.repos.d/remi-php* | grep -v remi-php{{ php_version | replace(".","") }}
   register: php_repos
-  when: nextcloud_manage_yum_repos and ansible_distribution_major_version|int <= 7
+  when: nextcloud_manage_repos and ansible_distribution_major_version|int <= 7
   check_mode: false
   changed_when: no
 
@@ -45,7 +30,7 @@
     section: remi-php{{ php_version | replace(".","") }}
     option: '{{ item.option }}'
     value: '{{ item.value }}'
-  when: nextcloud_manage_yum_repos and ansible_distribution_major_version|int <= 7
+  when: nextcloud_manage_repos and ansible_distribution_major_version|int <= 7
   loop:
     - { option: 'enabled', value: '1' }
     - { option: 'priority', value: '1' }
@@ -58,7 +43,7 @@
     section: "{{ item | regex_search('(remi-php)\\d\\d') }}"
     option: enabled
     value: "0"
-  when: nextcloud_manage_yum_repos and ansible_distribution_major_version|int <= 7
+  when: nextcloud_manage_repos and ansible_distribution_major_version|int <= 7
   loop: "{{ php_repos.stdout_lines }}"
 
 - name: ensure deprecated php module is absent
@@ -74,7 +59,7 @@
       - "@php:remi-{{ php_version }}"
       - "@redis:5"
   changed_when: no
-  when: nextcloud_manage_yum_repos and ansible_distribution_major_version|int >= 8
+  when: nextcloud_manage_repos and ansible_distribution_major_version|int >= 8
 
 - name: ensure required packages are installed  # noqa 403
   yum:
@@ -102,14 +87,14 @@
       - php-ldap
       - php-imap
       - php-pecl-apcu
-      - "php-pecl-redis{% if nextcloud_manage_yum_repos %}5{% endif %}"
+      - "php-pecl-redis{% if nextcloud_manage_repos %}5{% endif %}"
       - php-pecl-imagick
       - php-pecl-zip
       - php-process  # posix
       - jq
       - boost-program-options
     state: latest
-    enablerepo: "{% if nextcloud_manage_yum_repos %}remi{% else %}{{ omit }}{% endif %}"
+    enablerepo: "{% if nextcloud_manage_repos %}remi{% else %}{{ omit }}{% endif %}"
 
 - name: Gather installed packages
   package_facts:

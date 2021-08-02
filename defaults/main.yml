@@ -27,7 +27,7 @@ nextcloud_upload_tmp_dir: /nextcloud/tmp
 nextcloud_upgrade: no
 nextcloud_http_port: 80
 nextcloud_https_port: 443
-nextcloud_manage_yum_repos: yes
+nextcloud_manage_repos: yes
 nextcloud_php_memory_limit: 512M
 nextcloud_crypto_config: intermediate
 nextcloud_php_session_save_path: /var/lib/php/nextcloud/session
